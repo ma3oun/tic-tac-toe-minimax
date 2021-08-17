@@ -3,19 +3,22 @@ from math import inf as infinity
 from random import choice
 import platform
 import time
+from copy import deepcopy
 from os import system
 
 """
 An implementation of Minimax AI Algorithm in Tic Tac Toe,
 using Python.
 This software is available under GPL license.
-Author: Clederson Cruz
+Author: Ahmad Berjaoui
+Original author: Clederson Cruz
 Year: 2017
 License: GNU GENERAL PUBLIC LICENSE (GPL)
 """
 
 HUMAN = -1
 COMP = +1
+
 board = [
     [0, 0, 0],
     [0, 0, 0],
@@ -23,16 +26,16 @@ board = [
 ]
 
 
-def evaluate(state):
+def evaluate(state, depth):
     """
-    Function to heuristic evaluation of state.
+    Function to heuristic evaluation of state. A quick win is encouraged by multiplying with the residual depth.
     :param state: the state of the current board
-    :return: +1 if the computer wins; -1 if the human wins; 0 draw
+    :return: (10 - depth) if the computer wins; -depth if the human wins; 0 draw
     """
     if wins(state, COMP):
-        score = +1
+        score = +1 * (10 - depth)
     elif wins(state, HUMAN):
-        score = -1
+        score = -1 * depth
     else:
         score = 0
 
@@ -129,17 +132,19 @@ def minimax(state, depth, player):
     if player == COMP:
         best = [-1, -1, -infinity]
     else:
-        best = [-1, -1, +infinity]
+        best = [-1, -1, infinity]
 
     if depth == 0 or game_over(state):
-        score = evaluate(state)
+        score = evaluate(state, depth)
         return [-1, -1, score]
 
-    for cell in empty_cells(state):
+    valid_cells = empty_cells(state)
+    for cell in valid_cells:
         x, y = cell[0], cell[1]
-        state[x][y] = player
-        score = minimax(state, depth - 1, -player)
-        state[x][y] = 0
+        temp_state = deepcopy(state)
+        temp_state[x][y] = player
+        score = minimax(temp_state, depth - 1, -player)
+
         score[0], score[1] = x, y
 
         if player == COMP:
@@ -157,10 +162,12 @@ def clean():
     Clears the console
     """
     os_name = platform.system().lower()
-    if 'windows' in os_name:
-        system('cls')
+    if "windows" in os_name:
+        # system("cls")
+        pass
     else:
-        system('clear')
+        # system("clear")
+        pass
 
 
 def render(state, c_choice, h_choice):
@@ -169,19 +176,15 @@ def render(state, c_choice, h_choice):
     :param state: current state of the board
     """
 
-    chars = {
-        -1: h_choice,
-        +1: c_choice,
-        0: ' '
-    }
-    str_line = '---------------'
+    chars = {-1: h_choice, +1: c_choice, 0: " "}
+    str_line = "---------------"
 
-    print('\n' + str_line)
+    print("\n" + str_line)
     for row in state:
         for cell in row:
             symbol = chars[cell]
-            print(f'| {symbol} |', end='')
-        print('\n' + str_line)
+            print(f"| {symbol} |", end="")
+        print("\n" + str_line)
 
 
 def ai_turn(c_choice, h_choice):
@@ -197,7 +200,7 @@ def ai_turn(c_choice, h_choice):
         return
 
     clean()
-    print(f'Computer turn [{c_choice}]')
+    print(f"Computer turn [{c_choice}]")
     render(board, c_choice, h_choice)
 
     if depth == 9:
@@ -206,6 +209,8 @@ def ai_turn(c_choice, h_choice):
     else:
         move = minimax(board, depth, COMP)
         x, y = move[0], move[1]
+        # For debug only
+        # print(f"Best AI move score: {move[2]}")
 
     set_move(x, y, COMP)
     time.sleep(1)
@@ -225,29 +230,37 @@ def human_turn(c_choice, h_choice):
     # Dictionary of valid moves
     move = -1
     moves = {
-        1: [0, 0], 2: [0, 1], 3: [0, 2],
-        4: [1, 0], 5: [1, 1], 6: [1, 2],
-        7: [2, 0], 8: [2, 1], 9: [2, 2],
+        1: [0, 0],
+        2: [0, 1],
+        3: [0, 2],
+        4: [1, 0],
+        5: [1, 1],
+        6: [1, 2],
+        7: [2, 0],
+        8: [2, 1],
+        9: [2, 2],
     }
 
     clean()
-    print(f'Human turn [{h_choice}]')
+    print(f"Human turn [{h_choice}]")
     render(board, c_choice, h_choice)
 
     while move < 1 or move > 9:
         try:
-            move = int(input('Use numpad (1..9): '))
+            move = int(input("Use numpad (1..9): "))
             coord = moves[move]
             can_move = set_move(coord[0], coord[1], HUMAN)
 
             if not can_move:
-                print('Bad move')
+                cells = empty_cells(board)
+                valid_moves = [3 * c[0] + 1 + c[1] for c in cells]
+                print(f"Bad move. Available moves: {valid_moves}")
                 move = -1
         except (EOFError, KeyboardInterrupt):
-            print('Bye')
+            print("Bye")
             exit()
         except (KeyError, ValueError):
-            print('Bad choice')
+            print("Bad choice")
 
 
 def main():
@@ -255,43 +268,43 @@ def main():
     Main function that calls all functions
     """
     clean()
-    h_choice = ''  # X or O
-    c_choice = ''  # X or O
-    first = ''  # if human is the first
+    h_choice = ""  # X or O
+    c_choice = ""  # X or O
+    first = ""  # if human is the first
 
     # Human chooses X or O to play
-    while h_choice != 'O' and h_choice != 'X':
+    while h_choice != "O" and h_choice != "X":
         try:
-            print('')
-            h_choice = input('Choose X or O\nChosen: ').upper()
+            print("")
+            h_choice = input("Choose X or O\nChosen: ").upper()
         except (EOFError, KeyboardInterrupt):
-            print('Bye')
+            print("Bye")
             exit()
         except (KeyError, ValueError):
-            print('Bad choice')
+            print("Bad choice")
 
     # Setting computer's choice
-    if h_choice == 'X':
-        c_choice = 'O'
+    if h_choice == "X":
+        c_choice = "O"
     else:
-        c_choice = 'X'
+        c_choice = "X"
 
     # Human may starts first
     clean()
-    while first != 'Y' and first != 'N':
+    while first != "Y" and first != "N":
         try:
-            first = input('First to start?[y/n]: ').upper()
+            first = input("First to start?[y/n]: ").upper()
         except (EOFError, KeyboardInterrupt):
-            print('Bye')
+            print("Bye")
             exit()
         except (KeyError, ValueError):
-            print('Bad choice')
+            print("Bad choice")
 
     # Main loop of this game
     while len(empty_cells(board)) > 0 and not game_over(board):
-        if first == 'N':
+        if first == "N":
             ai_turn(c_choice, h_choice)
-            first = ''
+            first = ""
 
         human_turn(c_choice, h_choice)
         ai_turn(c_choice, h_choice)
@@ -299,21 +312,21 @@ def main():
     # Game over message
     if wins(board, HUMAN):
         clean()
-        print(f'Human turn [{h_choice}]')
+        print(f"Human turn [{h_choice}]")
         render(board, c_choice, h_choice)
-        print('YOU WIN!')
+        print("YOU WIN!")
     elif wins(board, COMP):
         clean()
-        print(f'Computer turn [{c_choice}]')
+        print(f"Computer turn [{c_choice}]")
         render(board, c_choice, h_choice)
-        print('YOU LOSE!')
+        print("YOU LOSE!")
     else:
         clean()
         render(board, c_choice, h_choice)
-        print('DRAW!')
+        print("DRAW!")
 
     exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

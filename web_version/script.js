@@ -10,14 +10,14 @@ var HUMAN = -1;
 var COMP = +1;
 
 /* Function to heuristic evaluation of state. */
-function evalute(state) {
+function evalute(state, depth) {
 	var score = 0;
 
 	if (gameOver(state, COMP)) {
-		score = +1;
+		score = +1 * (10 - depth);
 	}
 	else if (gameOver(state, HUMAN)) {
-		score = -1;
+		score = -1 * depth;
 	} else {
 		score = 0;
 	}
@@ -107,7 +107,7 @@ function minimax(state, depth, player) {
 	}
 
 	if (depth == 0 || gameOverAll(state)) {
-		var score = evalute(state);
+		var score = evalute(state, depth);
 		return [-1, -1, score];
 	}
 
